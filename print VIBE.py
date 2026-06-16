@@ -6,7 +6,7 @@ Features:
 3. Automatically calculate letter grade from average
 4. Display all students in a formatted table
 5. Show class statistics (highest, lowest, class average)
-6. Search for student by name (case-insensitive)
+6. Search for student by name (case-sensitive)
 7. Save records to student_grades.txt
 8. Load records from student_grades.txt on startup
 9. Use ESC to exit from the main menu
@@ -74,8 +74,8 @@ class StudentManager:
         return next((s for s in self.students if s.student_id == student_id), None)
 
     def search_by_name(self, query: str) -> List[Student]:
-        query = query.strip().lower()
-        return [s for s in self.students if query in s.name.lower()]
+        query = query.strip()
+        return [s for s in self.students if query in s.name]
 
     def class_statistics(self) -> Optional[dict]:
         if not self.students:

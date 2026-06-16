@@ -2,3 +2,4 @@ name|id|test1|test2|test3|average|grade
 Salsa|1111|35.00|100.00|99.00|78.00|C
 John|3333|35.00|99.00|54.00|62.67|D
 Maria Delgad|555|99.00|99.00|99.00|99.00|A
+Macarena Guac|1|44.00|66.00|99.00|69.67|D
