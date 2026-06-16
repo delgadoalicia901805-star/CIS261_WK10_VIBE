@@ -50,11 +50,11 @@ class Student:
             self.grade = "F"
 
     def formatted_scores(self) -> str:
-        return ", ".join(f"{score:.1f}" for score in self.scores)
+        return ", ".join(f"{score:.2f}" for score in self.scores)
 
     def formatted_row(self) -> List[str]:
         # Ensure values exist for three scores
-        score_texts = [f"{s:.1f}" for s in self.scores]
+        score_texts = [f"{s:.2f}" for s in self.scores]
         while len(score_texts) < 3:
             score_texts.append("0.0")
         return [self.student_id, self.name, score_texts[0], score_texts[1], score_texts[2], f"{self.average:.2f}", self.grade]
@@ -88,43 +88,56 @@ class StudentManager:
 
     def save_students(self) -> None:
         # Save using pipe-delimited format: name|id|test1|test2|test3|average|grade
-        with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
-            writer = csv.writer(f, delimiter="|")
-            writer.writerow(["name", "id", "test1", "test2", "test3", "average", "grade"])
-            for student in self.students:
-                s1 = f"{student.scores[0]:.1f}" if len(student.scores) > 0 else "0.0"
-                s2 = f"{student.scores[1]:.1f}" if len(student.scores) > 1 else "0.0"
-                s3 = f"{student.scores[2]:.1f}" if len(student.scores) > 2 else "0.0"
-                writer.writerow([student.name, student.student_id, s1, s2, s3, f"{student.average:.2f}", student.grade])
+        try:
+            with open(DATA_FILE, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f, delimiter="|")
+                writer.writerow(["name", "id", "test1", "test2", "test3", "average", "grade"])
+                for student in self.students:
+                    s1 = f"{student.scores[0]:.2f}" if len(student.scores) > 0 else "0.00"
+                    s2 = f"{student.scores[1]:.2f}" if len(student.scores) > 1 else "0.00"
+                    s3 = f"{student.scores[2]:.2f}" if len(student.scores) > 2 else "0.00"
+                    writer.writerow([student.name, student.student_id, s1, s2, s3, f"{student.average:.2f}", student.grade])
+            print(f"Saved {len(self.students)} student(s) to {DATA_FILE}.")
+        except OSError as e:
+            print(f"Error saving students to {DATA_FILE}: {e}")
+        except Exception as e:
+            print(f"Unexpected error while saving: {e}")
 
     def load_students(self) -> None:
         if not os.path.exists(DATA_FILE):
             return
-        with open(DATA_FILE, "r", newline="", encoding="utf-8") as f:
-            reader = csv.reader(f, delimiter="|")
-            rows = list(reader)
-            if not rows:
-                return
-            # Detect header row (name and id present)
-            start = 0
-            header = [h.strip().lower() for h in rows[0]]
-            if "name" in header and "id" in header:
-                start = 1
-            for row in rows[start:]:
-                # Expect at least name,id,score1,score2,score3
-                if len(row) < 5:
-                    continue
-                try:
-                    name = row[0].strip()
-                    sid = row[1].strip()
-                    s1 = float(row[2])
-                    s2 = float(row[3])
-                    s3 = float(row[4])
-                    scores = [s1, s2, s3]
-                    student = Student(sid, name, scores)
-                    self.students.append(student)
-                except (ValueError, IndexError):
-                    continue
+        try:
+            with open(DATA_FILE, "r", newline="", encoding="utf-8") as f:
+                reader = csv.reader(f, delimiter="|")
+                rows = list(reader)
+                if not rows:
+                    return
+                # Detect header row (name and id present)
+                start = 0
+                header = [h.strip().lower() for h in rows[0]]
+                if "name" in header and "id" in header:
+                    start = 1
+                for row in rows[start:]:
+                    # Expect at least name,id,score1,score2,score3
+                    if len(row) < 5:
+                        continue
+                    try:
+                        name = row[0].strip()
+                        sid = row[1].strip()
+                        s1 = float(row[2])
+                        s2 = float(row[3])
+                        s3 = float(row[4])
+                        scores = [s1, s2, s3]
+                        student = Student(sid, name, scores)
+                        self.students.append(student)
+                    except (ValueError, IndexError):
+                        print(f"Skipping invalid row in {DATA_FILE}: {row}")
+                        continue
+            print(f"Loaded {len(self.students)} student(s) from {DATA_FILE}.")
+        except OSError as e:
+            print(f"Error reading {DATA_FILE}: {e}")
+        except Exception as e:
+            print(f"Unexpected error while loading students: {e}")
 
 
 def prompt_float(prompt: str) -> float:
