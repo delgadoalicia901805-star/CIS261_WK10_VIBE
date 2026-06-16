@@ -261,6 +261,44 @@ def show_student_by_id(manager: StudentManager) -> None:
     print_table(rows)
 
 
+def edit_student_scores(manager: StudentManager) -> None:
+    sid = input("Enter student ID to edit scores: ").strip()
+    if not sid:
+        print("Student ID cannot be blank.")
+        return
+    if not sid.isdigit():
+        print("Student ID must be numeric.")
+        return
+    student = manager.find_by_id(sid)
+    if student is None:
+        print(f"No student found with ID {sid}.")
+        return
+    print(f"Editing scores for {student.name} (ID {student.student_id}).")
+
+    while True:
+        test_number_input = input("Which test would you like to change? (1-3): ").strip()
+        if not test_number_input:
+            print("Test number cannot be blank.")
+            continue
+        if not test_number_input.isdigit():
+            print("Enter a numeric test number between 1 and 3.")
+            continue
+        test_number = int(test_number_input)
+        if test_number < 1 or test_number > 3:
+            print("Test number must be 1, 2, or 3.")
+            continue
+        break
+
+    new_score = prompt_float(f"New score for Test {test_number}: ")
+    # Ensure list length is 3 for consistent storage
+    while len(student.scores) < 3:
+        student.scores.append(0.0)
+    student.scores[test_number - 1] = new_score
+    student.recalc()
+    manager.save_students()
+    print(f"Score updated for {student.name}. New average: {student.average:.2f}, Grade: {student.grade}")
+
+
 def show_menu() -> None:
     print("\nStudent Record Manager")
     print("1. Add new student")
@@ -268,6 +306,8 @@ def show_menu() -> None:
     print("3. Show class statistics")
     print("4. Search student by name")
     print("5. View student by ID")
+    print("6. Edit student scores")
+    print("7. Save records")
     print("ESC. Exit")
 
 
@@ -307,19 +347,13 @@ def main() -> None:
                 show_search_results(matches)
 
         elif choice == "5":
-            sid = input("Enter student ID: ").strip()
-            if not sid:
-                print("Student ID cannot be blank.")
-            elif not sid.isdigit():
-                print("Student ID must be numeric.")
-            else:
-                student = manager.find_by_id(sid)
-                if student is None:
-                    print(f"No student found with ID {sid}.")
-                else:
-                    headers = ["ID", "Name", "Test 1", "Test 2", "Test 3", "Average", "Grade"]
-                    rows = [headers, student.formatted_row()]
-                    print_table(rows)
+            show_student_by_id(manager)
+
+        elif choice == "6":
+            edit_student_scores(manager)
+
+        elif choice == "7":
+            manager.save_students()
 
         elif choice.lower() in {"esc", "exit"}:
             print("Exiting program.")
