@@ -1,3 +1,4 @@
-ID,Name,Score1,Score2,Score3
-1111,Mary Jane,87.0,91.0,77.0
-2222,John,45.0,105.0,87.0
+name|id|test1|test2|test3|average|grade
+Salsa|1111|35.00|100.00|100.00|78.33|C
+John|3333|35.00|99.00|54.00|62.67|D
+Maria Delgad|555|99.00|99.00|99.00|99.00|A

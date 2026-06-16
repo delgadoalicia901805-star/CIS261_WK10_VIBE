@@ -66,6 +66,7 @@ class StudentManager:
         self.load_students()
 
     def add_student(self, student: Student) -> None:
+        # add_student remains simple; prefer using find_by_id before calling
         self.students.append(student)
 
     def find_by_id(self, student_id: str) -> Optional[Student]:
@@ -124,6 +125,10 @@ class StudentManager:
                     try:
                         name = row[0].strip()
                         sid = row[1].strip()
+                        # Skip non-numeric IDs
+                        if not sid.isdigit():
+                            print(f"Skipping row with non-numeric ID in {DATA_FILE}: {row}")
+                            continue
                         s1 = float(row[2])
                         s2 = float(row[3])
                         s3 = float(row[4])
@@ -144,27 +149,46 @@ def prompt_float(prompt: str) -> float:
     while True:
         value = input(prompt).strip()
         try:
-            return float(value)
+            val = float(value)
+            if val < 0 or val > 100:
+                print("Score must be between 0 and 100.")
+                continue
+            return val
         except ValueError:
-            print("Invalid number. Enter a numeric score.")
+            print("Invalid number. Enter a numeric score between 0 and 100.")
 
 
-def prompt_student() -> Student:
-    student_id = input("Student ID: ").strip()
-    while not student_id:
-        print("Student ID is required.")
-        student_id = input("Student ID: ").strip()
+def prompt_student(manager: StudentManager) -> Optional[Student]:
+    # Validate numeric-only student ID and uniqueness
+    while True:
+        student_id = input("Student ID (numbers only): ").strip()
+        if not student_id:
+            print("Student ID is required.")
+            continue
+        if not student_id.isdigit():
+            print("Student ID must contain digits only. Please re-enter.")
+            continue
+        if manager.find_by_id(student_id) is not None:
+            print(f"A student with ID {student_id} already exists.")
+            return None
+        break
 
-    name = input("Student name: ").strip()
-    while not name:
-        print("Student name is required.")
-        name = input("Student name: ").strip()
+    first_name = input("First name: ").strip()
+    while not first_name:
+        print("First name is required.")
+        first_name = input("First name: ").strip()
 
-    scores = []
+    last_name = input("Last name: ").strip()
+    while not last_name:
+        print("Last name is required.")
+        last_name = input("Last name: ").strip()
+
+    name = f"{first_name.title()} {last_name.title()}"
+    scores: List[float] = []
     for i in range(1, 4):
         scores.append(prompt_float(f"Test {i}: "))
 
-    return Student(student_id=student_id, name=name.title(), scores=scores)
+    return Student(student_id=student_id, name=name, scores=scores)
 
 
 def print_table(rows: List[List[str]]) -> None:
@@ -191,6 +215,25 @@ def show_class_statistics(manager: StudentManager) -> None:
     print(f"Lowest Average:  {stats['lowest']:.2f}")
     print(f"Class Average:   {stats['class_average']:.2f}")
 
+    passing = [s for s in manager.students if s.grade in {"A", "B", "C"}]
+    failing = [s for s in manager.students if s.grade in {"D", "F"}]
+
+    print("\nPassing Students")
+    if passing:
+        headers = ["ID", "Name", "Test 1", "Test 2", "Test 3", "Average", "Grade"]
+        rows = [headers] + [student.formatted_row() for student in passing]
+        print_table(rows)
+    else:
+        print("No passing students.")
+
+    print("\nFailing Students")
+    if failing:
+        headers = ["ID", "Name", "Test 1", "Test 2", "Test 3", "Average", "Grade"]
+        rows = [headers] + [student.formatted_row() for student in failing]
+        print_table(rows)
+    else:
+        print("No failing students.")
+
 
 def show_search_results(students: List[Student]) -> None:
     if not students:
@@ -201,12 +244,30 @@ def show_search_results(students: List[Student]) -> None:
     print_table(rows)
 
 
+def show_student_by_id(manager: StudentManager) -> None:
+    sid = input("Enter student ID: ").strip()
+    if not sid:
+        print("Student ID cannot be blank.")
+        return
+    if not sid.isdigit():
+        print("Student ID must be numeric.")
+        return
+    student = manager.find_by_id(sid)
+    if student is None:
+        print(f"No student found with ID {sid}.")
+        return
+    headers = ["ID", "Name", "Test 1", "Test 2", "Test 3", "Average", "Grade"]
+    rows = [headers, student.formatted_row()]
+    print_table(rows)
+
+
 def show_menu() -> None:
     print("\nStudent Record Manager")
     print("1. Add new student")
     print("2. Display all students")
     print("3. Show class statistics")
     print("4. Search student by name")
+    print("5. View student by ID")
     print("ESC. Exit")
 
 
@@ -219,10 +280,17 @@ def main() -> None:
         choice = input("Choose an option: ").strip()
 
         if choice == "1":
-            student = prompt_student()
+            student = prompt_student(manager)
+            if student is None:
+                # prompt_student already printed a message (duplicate or invalid ID)
+                continue
+            # Double-check duplicate before adding
+            if manager.find_by_id(student.student_id) is not None:
+                print(f"Student with ID {student.student_id} already exists. Not added.")
+                continue
             manager.add_student(student)
             manager.save_students()
-            print(f"Student {student.name} added and saved.")
+            print(f"Student {student.name} (ID {student.student_id}) added and saved.")
 
         elif choice == "2":
             show_all_students(manager)
@@ -237,6 +305,21 @@ def main() -> None:
             else:
                 matches = manager.search_by_name(query)
                 show_search_results(matches)
+
+        elif choice == "5":
+            sid = input("Enter student ID: ").strip()
+            if not sid:
+                print("Student ID cannot be blank.")
+            elif not sid.isdigit():
+                print("Student ID must be numeric.")
+            else:
+                student = manager.find_by_id(sid)
+                if student is None:
+                    print(f"No student found with ID {sid}.")
+                else:
+                    headers = ["ID", "Name", "Test 1", "Test 2", "Test 3", "Average", "Grade"]
+                    rows = [headers, student.formatted_row()]
+                    print_table(rows)
 
         elif choice.lower() in {"esc", "exit"}:
             print("Exiting program.")
